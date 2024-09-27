@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Booking Form</title>
+</head>
+<body>
+    <h1>Booking Form</h1>
+    <form action="/submit-booking" method="POST">
+        <input type="hidden" name="room_id" value="{{.}}">
+        <label for="name">Your Name:</label>
+        <input type="text" name="name" required><br>
+        <label for="email">Your Email:</label>
+        <input type="email" name="email" required><br>
+        <label for="checkin">Check-In Date:</label>
+        <input type="date" name="checkin" required><br>
+        <label for="checkout">Check-Out Date:</label>
+        <input type="date" name="checkout" required><br>
+        <input type="submit" value="Submit Booking">
+    </form>
+    <a href="/rooms">Back to Rooms</a>
+</body>
+</html>
