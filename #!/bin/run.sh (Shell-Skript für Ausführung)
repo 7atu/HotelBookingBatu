@@ -1,0 +1,4 @@
+#!/bin/bash
+
+go build -o hotel_booking main.go
+./hotel_booking
