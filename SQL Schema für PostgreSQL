@@ -1,0 +1,20 @@
+CREATE TABLE rooms (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100),
+    description TEXT,
+    price NUMERIC
+);
+
+CREATE TABLE bookings (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100),
+    email VARCHAR(100),
+    room_id INT REFERENCES rooms(id),
+    checkin DATE,
+    checkout DATE
+);
+
+INSERT INTO rooms (name, description, price) 
+VALUES 
+('General\'s Quarters', 'Spacious room with a beautiful view.', 150.00),
+('Major\'s Suite', 'Luxurious room with top amenities.', 250.00);
