@@ -1,0 +1,107 @@
+package main
+
+import (
+	"database/sql"
+	"fmt"
+	"log"
+	"net/http"
+	"text/template"
+
+	_ "github.com/lib/pq"
+)
+
+var tmpl = template.Must(template.ParseGlob("templates/*.html"))
+
+type Room struct {
+	ID          int
+	Name        string
+	Description string
+	Price       float64
+}
+
+type Booking struct {
+	Name      string
+	Email     string
+	RoomID    int
+	CheckIn   string
+	CheckOut  string
+}
+
+func dbConn() (db *sql.DB) {
+	connStr := "user=youruser dbname=yourdb sslmode=disable"
+	db, err := sql.Open("postgres", connStr)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return db
+}
+
+func home(w http.ResponseWriter, r *http.Request) {
+	tmpl.ExecuteTemplate(w, "home.html", nil)
+}
+
+func roomPage(w http.ResponseWriter, r *http.Request) {
+	db := dbConn()
+	rows, err := db.Query("SELECT id, name, description, price FROM rooms")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer db.Close()
+
+	rooms := []Room{}
+	for rows.Next() {
+		var room Room
+		err := rows.Scan(&room.ID, &room.Name, &room.Description, &room.Price)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		rooms = append(rooms, room)
+	}
+
+	tmpl.ExecuteTemplate(w, "rooms.html", rooms)
+}
+
+func bookingForm(w http.ResponseWriter, r *http.Request) {
+	roomID := r.URL.Query().Get("room_id")
+	tmpl.ExecuteTemplate(w, "booking.html", roomID)
+}
+
+func submitBooking(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodPost {
+		booking := Booking{
+			Name:    r.FormValue("name"),
+			Email:   r.FormValue("email"),
+			RoomID:  intValue(r.FormValue("room_id")),
+			CheckIn: r.FormValue("checkin"),
+			CheckOut: r.FormValue("checkout"),
+		}
+
+		db := dbConn()
+		_, err := db.Exec("INSERT INTO bookings (name, email, room_id, checkin, checkout) VALUES ($1, $2, $3, $4, $5)", booking.Name, booking.Email, booking.RoomID, booking.CheckIn, booking.CheckOut)
+		if err != nil {
+			http.Error(w, "Unable to save booking", http.StatusInternalServerError)
+			return
+		}
+		defer db.Close()
+
+		tmpl.ExecuteTemplate(w, "booking-success.html", booking)
+	}
+}
+
+func intValue(str string) int {
+	var i int
+	fmt.Sscanf(str, "%d", &i)
+	return i
+}
+
+func main() {
+	http.HandleFunc("/", home)
+	http.HandleFunc("/rooms", roomPage)
+	http.HandleFunc("/book", bookingForm)
+	http.HandleFunc("/submit-booking", submitBooking)
+
+	fmt.Println("Server starting on port 8080...")
+	log.Fatal(http.ListenAndServe(":8080", nil))
+}
